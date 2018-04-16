@@ -7,15 +7,15 @@ output reg [31:0] readData;
 reg[7:0] dMem[1023:0];
 always@(posedge clk)
 	begin
-	if(memWrite)
+	if(memWrite)//sw
 		dMem[address]= writeData[31:24];
 		dMem[address+1]= writeData[23:16];
 		dMem[address+2]= writeData[15:8];
 		dMem[address+3]= writeData[7:0];
 	end
-always@(address,writeData)
+always@(address,writeData,memRead)
 	begin
-	    if(memRead==1)
+	    if(memRead==1)//lw
 	    begin
 		     readData[31:24]=dMem[address];
 		     readData[23:16]=dMem[address+1];
@@ -24,23 +24,19 @@ always@(address,writeData)
 		 end
 		else if(memRead==2)
 	    begin
-		    if(dMem[address][7:7])
+		    if(dMem[address][7:7]) //lh
 				begin
-				readData[31:24]=8'b11111111;readData[23:16]=8'b11111111;
+				readData = {16'b1111111111111111,dMem[address],dMem[address+1]};
+			        
 				end
 			else
 				begin
-				readData[31:24]=8'b00000000;readData[23:16]=8'b00000000;	
+				readData = {16'b0000000000000000,dMem[address],dMem[address+1]};	
 				end
-			readData[15:8]=dMem[address];
-			readData[7:0]=dMem[address+1];
 		end
-		else if(memRead==3)
+		else if(memRead==3)//lhu
 		begin
-		    readData[31:24]=8'b00000000; 
-		    readData[23:16]=8'b00000000;
-		    readData[15:8]=dMem[address];
-		    readData[7:0]=dMem[address+1];
+		    readData = {16'b0000000000000000,dMem[address],dMem[address+1]};
 		end
 		
 	end
