@@ -24,6 +24,7 @@ endmodule
 
 module ALU (in1,in2,shamt,aluop,out,zeroflag);
 input signed [31:0]  in1,in2; //edited to signed
+reg unsigned [31:0]  in1u,in2u;
 input [3:0] aluop;
 input [4:0] shamt;
 output  reg  [31:0] out;
@@ -37,20 +38,22 @@ else
 zeroflag=0;
 //if(aluop==7)
 
+in1u=in1;
+in2u=in2;
 case(aluop)
 0: out=in1+in2;
 1: out=in1-in2;
 2: out=in1&in2;
 3: out=in1|in2;
-4 : begin out=in1<in2;$display	("gwh  %d",	out);$display	("in1  %d",	in1);$display	("in2  %d",	in2); end
+4 : out=in1<in2;
 5 :out=in2*(2**shamt);
 6 :out=in2/(2**shamt);
-7 :  begin out={1'b0,in1} < {1'b0,in2};;$display	("gwh ltu  %d",	out);$display	("in1  %d",	in1);$display	("in2  %d",	in2); end
+7 :out=in1u<in2u; 
 endcase
 end
 endmodule 
 
-
+/*
 module	ALU_Test();
 				reg	[31:0]	in1,	in2;
 				 wire signed [31:0] 	OUT;
@@ -79,7 +82,7 @@ module	ALU_Test();
 								#10	$display	("shift/ out %d",	OUT);	$display	("flag %d",	zeroflag);
 									#10	in1	=	20;	in2	=	20;aluop=6;
 								#10	$display	("flag out %d",	OUT);	$display	("flag %d",	zeroflag);
-									#10	in1	=	-3;in2	=	-5 ;aluop=7;
+									#10	in1	=	3;in2	=	-3 ;aluop=7;
 								#10	$display	("ltu out %d",	OUT);	$display	("flag %d",	zeroflag);
 								#10	in1	=-3;in2	=5;aluop=4;
 								#10	$display	("lt out %d",	OUT);	$display	("flag %d",	zeroflag);
@@ -89,6 +92,7 @@ module	ALU_Test();
 				always@(in1,	in2,	aluop);
 				ALU	aluTest(in1,in2,shamt,aluop,OUT,zeroflag);
 endmodule
+/*
 
 /*
 module	ALU_Test();
