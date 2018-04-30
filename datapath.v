@@ -473,7 +473,8 @@ wire [1:0] EXMemRead;
 
 wire[31:0] MEMWriteData, MEMPC, MEMALUResult;
 wire[4:0] MEMWriteRegister; 
-wire MEMRegWrite, MEMMemtoReg, MEMMemWrite, MEMMemRead, MEMBranch, MEMZeroFlag;
+wire MEMRegWrite, MEMMemtoReg, MEMMemWrite, MEMBranch, MEMZeroFlag;
+wire [1:0] MEMMemRead;
 
 
 // WB ///
