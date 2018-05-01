@@ -66,7 +66,7 @@ zeroflag <=0;
  
 in1u=in1;
 in2u=in2;
-//$display("aluop %b, in1 %b , in2 %b , out %b", aluop, in1,in2,out);
+//$display(" outalu %b",out);
 case(aluop)
 0: out<=in1+in2;
 1: out<=in1-in2;
@@ -121,10 +121,10 @@ input clk;
 output reg [31:0] readData;
 reg[7:0] dMem[1023:0];
 initial begin
-dMem[4] =8'b00000101;
-dMem[5] =8'b00000101;
-dMem[6] =8'b00000001;
-dMem[7] =8'b10000101;
+dMem[4] =8'b00000000;
+dMem[5] =8'b00000000;
+dMem[6] =8'b00000000;
+dMem[7] =8'b00001010;
 dMem[10]=8'b10000001;
 dMem[11]=8'b10000111;
 dMem[12]=8'b00000011;
@@ -177,7 +177,7 @@ input [31:0] pc;
 input clk;
 reg [31:0] iMem [1023:0];
 initial begin
-iMem[0] =32'b00000001010000000100100000100000;//add $t1,$t2,$0
+iMem[0] =32'b000000_01010_00000_01001_00000_100000;//add $t1,$t2,$0
 iMem[4] =32'b10001110001010110000000000000000;//lw $t3,0($s1)
 iMem[8] =32'b100101_01100_01000_0000_0000_0000_0001;//lhu $t0,1($t4)
 iMem[12]=32'b100001_01110_01101_0000_0000_0000_0010;//lh $t5,2($t6)
@@ -192,7 +192,12 @@ iMem[44]=32'b000000_01010_01100_11000_00000_101010;//slt $t8, $t2, $t4
 iMem[48]=32'b000000_01010_00010_11001_00000_101011;//sltu $t9, $t2, $v0
 iMem[52]=32'b001100_01100_00101_00000_00000_001000;//andi $a1, $t4, 8
 iMem[56]=32'b001101_01100_00110_00000_00000_001000;//ori $a2, $t4, 8
-iMem[60]=32'b000100_00011_00100_11111_11111_101111;//beq $v1,$a0,0 
+iMem[60]=32'b000000_01100_01010_00111_00000_100000;//add $a3, $t4,$t2
+iMem[64]=32'b000000_00111_01100_11010_00000_100010;//sub $k0, $a3, $t4
+iMem[68]=32'b000000_01010_01100_10100_00000_100101;//or $s4, $t2, $t4
+//iMem[68]=32'b100011_10001_11011_0000000000000000;//lw $k1,0($s1)
+//iMem[72]=32'b000000_11011_01100_11100_00000_100010;//sub $k0, $k1, $t4
+iMem[72]=32'b000100_00011_00100_11111_11111_101100;//beq $v1,$a0,0 
 
 
 end
@@ -252,7 +257,7 @@ module registerFile( clk , rs , rt , rd , writeData , regWrite , Data1 , Data2 ,
        registers[2]  =32'b11111111111111111000000011100111;
        registers[3]  =32'b00000000000000000000000000000111;
        registers[4]  =32'b00000000000000000000000000000111;
-       registers[10] =32'b00000000000000000000000000001111;
+       registers[10] =32'b00000000000000000000000000000101;
        registers[12] =32'b00000000000000000000000000001001;
        registers[14] =32'b00000000000000000000000000001011;
        registers[15] =32'b00000000000000000000000000001111;
@@ -294,10 +299,10 @@ endmodule
 
 ///////////////////////////PIPELINING STARTS HERE/////////////////////////////////
 
-module IF_ID(currentInstruction, currentPC, clk, newInstruction, newPC);
+module IF_ID(Hazard,currentInstruction, currentPC, clk, newInstruction, newPC);
 output reg[31:0] newInstruction, newPC;
 input [31:0] currentInstruction, currentPC;
-input clk;
+input clk,Hazard;
 
 initial
     begin
@@ -307,24 +312,27 @@ initial
 
 always@(posedge clk)
     begin
-        newInstruction <= currentInstruction;
-        newPC <= currentPC;
+   // $display("IF/ID_Instruction %d ,IF/ID_PC %d " ,newInstruction, newPC);
+    if(Hazard ==1)
+        begin
+            newInstruction <= currentInstruction;
+            newPC <= currentPC;
+        end
     end
 
 endmodule
 
-module ID_EX(cSignExtend, cReadData1, cReadData2, cPC, cRt, cRd, cShamt, cOp, cFunc,
-cRegDst,cBranch,cMemRead,cMemtoReg,cMemWrite,cALUSrc,cRegWrite, clk, nSignExtend, nReadData1, nReadData2, nPC, nRt, nRd, nShamt, nOp, nFunc,
+module ID_EX(cSignExtend, cReadData1, cReadData2, cPC,cRs, cRt, cRd, cShamt, cOp, cFunc,
+cRegDst,cBranch,cMemRead,cMemtoReg,cMemWrite,cALUSrc,cRegWrite, clk, nSignExtend, nReadData1, nReadData2, nPC,nRs, nRt, nRd, nShamt, nOp, nFunc,
 nRegDst,nBranch,nMemRead,nMemtoReg,nMemWrite,nALUSrc,nRegWrite);
 
 input [31:0] cSignExtend, cReadData1, cReadData2, cPC;
-input [4:0] cRt, cRd, cShamt;
+input [4:0] cRs,cRt, cRd, cShamt;
 input [5:0] cOp, cFunc;
 input cRegDst,cBranch,cMemtoReg,cMemWrite,cALUSrc,cRegWrite, clk;
 input [1:0] cMemRead;
-
 output reg [31:0] nSignExtend, nReadData1, nReadData2, nPC;
-output reg [4:0] nRt, nRd, nShamt;
+output reg [4:0] nRs,nRt, nRd, nShamt;
 output reg [5:0] nOp, nFunc;
 output reg nRegDst,nBranch,nMemtoReg,nMemWrite,nALUSrc,nRegWrite;
 output reg [1:0] nMemRead;
@@ -337,6 +345,7 @@ initial
         nPC <= 0;
         nRt <= 0;
         nRd <= 0;
+        nRs<=0;
         nShamt <= 0;
         nOp <= 0;
         nFunc <= 0;
@@ -351,12 +360,15 @@ initial
 
 always @ (posedge clk)
     begin
+      //  $display(" ID_EX_SignExtend %d , ID_EX_ReadData1 %d , ID_EX_ReadData2 %d , ID_EX_PC %d ,ID_EX_Rs %d , ID_EX_Rt %d , ID_EX_Rd %d , ID_EX_Shamt %d , ID_EX_Op %d , ID_EX_Func %d ,ID_EX_RegDst %d ,ID_EX_Branch %d ,ID_EX_MemRead %d ,ID_EX_MemtoReg %d ,ID_EX_MemWrite %d ,ID_EX_ALUSrc %d ,ID_EX_RegWrite %d" ,nSignExtend, nReadData1, nReadData2, nPC,nRs, nRt, nRd, nShamt, nOp, nFunc,
+//nRegDst,nBranch,nMemRead,nMemtoReg,nMemWrite,nALUSrc,nRegWrite);
         nSignExtend <= cSignExtend;
         nReadData1 <= cReadData1;
         nReadData2 <= cReadData2;
         nPC <= cPC;
         nRt <= cRt;
         nRd <= cRd;
+        nRs <= cRs;
         nShamt <= cShamt;
         nOp <= cOp;
         nFunc <= cFunc;
@@ -402,6 +414,7 @@ initial
 
 always@(posedge clk)
     begin
+   // $display("EX_MEM_WriteData %d, EX_MEM_PC %d, EX_MEM_WriteRegister %d, EX_MEM_RegWrite %d, EX_MEM_MemtoReg %d, EX_MEM_ALUResult %d, EX_MEM_MemWrite %d, EX_MEM_MemRead %d, EX_MEM_Branch %d, EX_MEM_ZeroFlag %d",nWriteData, nPC, nWriteRegister, nRegWrite, nMemtoReg, nALUResult, nMemWrite, nMemRead, nBranch, nZeroFlag);
         nWriteData<=cWriteData;
         nPC<= cPC;
         nALUResult <= cALUResult;
@@ -438,12 +451,110 @@ initial
 
 always@(posedge clk)
     begin
+   // $display("MEM_WB_MemtoReg %d , MEM_WB_RegWrite %d , MEM_WB_WriteRegister  %d , MEM_WB_ALUResult  %d , MEM_WB_ReadData  %d", nMemtoReg, nRegWrite, nWriteRegister, nALUResult, nReadData);
         nALUResult<=cALUResult;
         nReadData<=cReadData;
         nWriteRegister<=cWriteRegister;
         nMemtoReg<=cMemtoReg;
         nRegWrite<=cRegWrite;
     end
+
+endmodule
+
+/////////////////////////BONUS////////////////////////////////////////////////
+
+module HazardUnit(HazardOutput,clk,EXMemread,EXRT,IFRT,IFRS);
+output reg HazardOutput;
+input clk;
+input[1:0] EXMemread;
+input[4:0]EXRT,IFRT,IFRS;
+
+
+always@(EXMemread,EXRT,IFRT,IFRS)
+    begin
+    if((EXMemread!=0) && ( (EXRT==IFRS) || (EXRT == IFRT) ))
+        HazardOutput <= 0;
+      else 
+        HazardOutput <= 1;
+    end
+
+endmodule
+
+module muxEXHazard(RegDst,Branch,MemRead,MemtoReg,MemWrite,ALUSrc
+,RegWrite,Hazard,RegDstOut,BranchOut,MemReadOut,MemtoRegOut,MemWriteOut,ALUSrcOut,RegWriteOut);
+   
+    input RegDst,Branch,MemtoReg,MemWrite,ALUSrc,RegWrite,Hazard;
+    input[1:0] MemRead;
+   
+    output reg RegDstOut,BranchOut,MemtoRegOut,MemWriteOut,ALUSrcOut,RegWriteOut;
+    output reg [1:0] MemReadOut;
+   
+   
+    always@(RegDst,Branch,MemRead,MemtoReg,MemWrite,ALUSrc,RegWrite,Hazard)
+    begin
+        if(Hazard == 0)
+        begin
+            RegDstOut <= 0;
+            BranchOut <= 0;
+            MemReadOut<= 0;
+            MemtoRegOut<=0;
+            MemWriteOut<=0;
+            ALUSrcOut  <=0;
+            RegWriteOut<=0;        
+        end
+        else
+        begin
+            RegDstOut <= RegDst;
+            BranchOut <= Branch;
+            MemReadOut<= MemRead;
+            MemtoRegOut<= MemtoReg;
+            MemWriteOut<= MemWrite;
+            ALUSrcOut  <= ALUSrc;
+            RegWriteOut<= RegWrite; 
+        end
+    end
+endmodule
+
+
+module ForwardingUnit (ForwardA,ForwardB,clk,MemRegWrite,MemRD,WBRegWrite,WBRD,EXRS,EXRT);
+   input clk,MemRegWrite,WBRegWrite;
+   input[4:0]WBRD,EXRS,EXRT,MemRD;
+   output reg[1:0] ForwardA,ForwardB;
+   
+  
+   
+   always@(MemRegWrite,MemRD,WBRegWrite,WBRD,EXRS,EXRT)
+   begin
+   //$display("ForWardA ",ForwardA);
+   if(MemRegWrite ==1 && (MemRD !=0) && (MemRD ==EXRS))
+   ForwardA <= 2'b10;
+   else if(WBRegWrite ==1 && (WBRD !=0) && (WBRD ==EXRS) &&  ((MemRegWrite ==1 && (MemRD !=0) && (MemRD ==EXRS)) !=1))
+   ForwardA <= 2'b01;
+   else ForwardA  <= 2'b00;
+   
+   if(MemRegWrite ==1 && (MemRD !=0) && (MemRD ==EXRT))
+   ForwardB <= 2'b10;
+   else  if(WBRegWrite ==1 && (WBRD !=0) && (WBRD ==EXRT) && (MemRegWrite ==1 && (MemRD !=0) && (MemRD ==EXRT))!=1)
+   ForwardB <= 2'b01;
+   else ForwardB <= 2'b00;
+   
+   end
+endmodule
+
+module ALUForwardMux (ALUin,RSOriginal,EXRS,MEMRS,Forward);
+input [31:0] EXRS,MEMRS,RSOriginal;
+input [1:0] Forward;
+output reg [31:0] ALUin;
+
+always @ (RSOriginal,EXRS,MEMRS,Forward) begin
+   if(Forward == 2'b01)
+   ALUin <= MEMRS;
+    else if(Forward == 2'b10)
+    ALUin <= EXRS;
+    else
+     ALUin <= RSOriginal;
+
+end
 
 endmodule
 
@@ -489,6 +600,14 @@ wire [31:0] WBALUResult, WBReadData;
 
 wire [31:0] newInstruction, newPC;
 
+
+////bonus////
+wire HazardOutput, RegDstOut,BranchOut,MemtoRegOut,MemWriteOut,ALUSrcOut,RegWriteOut;
+wire [1:0] MemReadOut,ForwardA,ForwardB;
+wire [4:0] EXRS;
+wire [31:0] ALURS,ALURT;
+
+
 //assign pc=0;
 always @(posedge clk) begin
 //$display ("instruction %b pc %b clk %b",instruction,pc,clk);
@@ -511,18 +630,33 @@ InstructionMemory im (instruction,pc,clk);
 assign Newpc=pc+4;
 always@(posedge clk)
 begin
-if(MEMBranch&&MEMZeroFlag)
-    pc <= MEMPC;
+if(HazardOutput ==0)
+    pc<= pc;
 else
-    pc <= Newpc;
+    begin
+    if(MEMBranch&&MEMZeroFlag)
+        pc <= MEMPC;
+    else
+        pc <= Newpc;
+    end
 end
 ///////////\/\/\/\/\/\/\/\/
+ 
+/////////////////////////////////bonus/////////////////////////////
 
+HazardUnit HU  (HazardOutput,clk,EXMemRead,EXRt,newInstruction[20:16],newInstruction[25:21]);
 
+ForwardingUnit FU (ForwardA,ForwardB,clk,MEMRegWrite,MEMWriteRegister,WBRegWrite,WBwriteRegister
+,EXRS,EXRt);
 
-IF_ID if_id(instruction, Newpc, clk, newInstruction, newPC);
+//////////////////////////////////////////////////////////////////
+
+IF_ID if_id(HazardOutput,instruction, Newpc, clk, newInstruction, newPC);
 
 controller control (newInstruction[31:26],RegDst,Branch,MemRead,MemtoReg,MemWrite,ALUSrc,RegWrite);
+ 
+ muxEXHazard muxEXhazard(RegDst,Branch,MemRead,MemtoReg,MemWrite,ALUSrc
+,RegWrite,HazardOutput,RegDstOut,BranchOut,MemReadOut,MemtoRegOut,MemWriteOut,ALUSrcOut,RegWriteOut);
  
 Mux5 mux5 (EXRt, EXRd, EXRegDst, writeRegister); // hayegi tani
  
@@ -533,17 +667,20 @@ signExtension signExtension1 (SignExtensionout, newInstruction[15:0]);
 
 
 
-ID_EX id_ex(SignExtensionout, readData1, readData2, newPC, newInstruction[20:16], newInstruction[15:11], newInstruction[10:6], newInstruction[31:26], 
-newInstruction[5:0],RegDst,Branch,MemRead,MemtoReg,MemWrite,ALUSrc,RegWrite, clk, 
-EXSignExtend, EXReadData1, EXReadData2, EXPC, EXRt, EXRd, EXShamt, EXOp, EXFunc,
+ID_EX id_ex(SignExtensionout, readData1, readData2, newPC, newInstruction[25:21],newInstruction[20:16], newInstruction[15:11], newInstruction[10:6], newInstruction[31:26], 
+newInstruction[5:0],RegDstOut,BranchOut,MemReadOut,MemtoRegOut,MemWriteOut,ALUSrcOut,RegWriteOut, clk, 
+EXSignExtend, EXReadData1, EXReadData2, EXPC,EXRS, EXRt, EXRd, EXShamt, EXOp, EXFunc,
 EXRegDst,EXBranch,EXMemRead,EXMemtoReg,EXMemWrite,EXALUSrc,EXRegWrite);
 
+ALUForwardMux mux1 (ALURS,EXReadData1,MEMALUResult,writeData,ForwardA);
 
 Mux32 mux32 (EXReadData2, EXSignExtend, EXALUSrc, ALUin2);
+
+ALUForwardMux mux2 (ALURT,ALUin2,MEMALUResult,writeData,ForwardB);
  
 ALUcontrol aluControl(EXFunc,EXOp,ALUOp);
  
-ALU alu  (EXReadData1,ALUin2,EXShamt,ALUOp,ALUOut,zeroflag);
+ALU alu  (ALURS,ALURT,EXShamt,ALUOp,ALUOut,zeroflag);
 
  //assign SignExtensionout2 = SignExtensionout*4; // here
  //assign isBranch = Branch&zeroflag;
