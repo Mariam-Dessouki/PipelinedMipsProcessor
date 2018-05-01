@@ -195,8 +195,6 @@ iMem[56]=32'b001101_01100_00110_00000_00000_001000;//ori $a2, $t4, 8
 iMem[60]=32'b000000_01100_01010_00111_00000_100000;//add $a3, $t4,$t2
 iMem[64]=32'b000000_00111_01100_11010_00000_100010;//sub $k0, $a3, $t4
 iMem[68]=32'b000000_01010_01100_10100_00000_100101;//or $s4, $t2, $t4
-//iMem[68]=32'b100011_10001_11011_0000000000000000;//lw $k1,0($s1)
-//iMem[72]=32'b000000_11011_01100_11100_00000_100010;//sub $k0, $k1, $t4
 iMem[72]=32'b000100_00011_00100_11111_11111_101100;//beq $v1,$a0,0 
 
 
@@ -651,6 +649,7 @@ ForwardingUnit FU (ForwardA,ForwardB,clk,MEMRegWrite,MEMWriteRegister,WBRegWrite
 
 //////////////////////////////////////////////////////////////////
 
+
 IF_ID if_id(HazardOutput,instruction, Newpc, clk, newInstruction, newPC);
 
 controller control (newInstruction[31:26],RegDst,Branch,MemRead,MemtoReg,MemWrite,ALUSrc,RegWrite);
@@ -727,3 +726,4 @@ end
 end
 
 endmodule
+
