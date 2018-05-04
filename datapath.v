@@ -120,6 +120,7 @@ input[1:0] memRead;
 input clk;
 output reg [31:0] readData;
 reg[7:0] dMem[1023:0];
+reg [5:0] i;
 initial begin
 dMem[4] =8'b00000000;
 dMem[5] =8'b00000000;
@@ -170,6 +171,16 @@ always@(address, memRead)
 		    readData = 32'bxxxx_xxxx_xxxx_xxxx_xxxx_xxxx_xxxx_xxxx;
  
 	end
+	
+    initial
+     begin
+	#100 begin
+	 	for(i=0; i<32; i=i+1)
+	 	begin
+	 		$display("mem[%d]: %b \n",i,dMem[i]);
+	 	end
+ 	end
+ end
  
 endmodule 
  
@@ -190,7 +201,7 @@ iMem[28]=32'b000000_01010_01100_10100_00000_100101;//or $s4, $t2, $t4
 iMem[32]=32'b000000_00000_01100_10101_00011_000000;//sll $s5, $t4, 3
 iMem[36]=32'b000000_00000_01100_10110_00010_000010;//srl $s6, $t4, 2
 iMem[40]=32'b001000_01100_10111_11111_11111_110110;//addi $s7, $t4, -10
-iMem[44]=32'b000000_01010_01100_11000_00000_101010;//slt $t8, $t2, $t4 
+iMem[44]=32'b000000_01100_01010_11000_00000_101010;//slt $t8, $t4, $t2 
 iMem[48]=32'b000000_01010_00010_11001_00000_101011;//sltu $t9, $t2, $v0
 iMem[52]=32'b001100_01100_00101_00000_00000_001000;//andi $a1, $t4, 8
 iMem[56]=32'b001101_01100_00110_00000_00000_001000;//ori $a2, $t4, 8
@@ -199,7 +210,7 @@ iMem[64]=32'b000000_00111_01100_11010_00000_100010;//sub $k0, $a3, $t4
 iMem[68]=32'b100001_11111_01101_1111_1111_1111_1111;//lh $t5,-1($ra)
 iMem[72]=32'b100011_10001_01011_0000000000000000;//lw $t3,0($s1)
 iMem[76]=32'b000000_01011_01100_10100_00000_100101;//or $s4, $t3, $t4
-iMem[80]=32'b000100_00011_00100_11111_11111_101010;//beq $v1,$a0,0 
+iMem[80]=32'b000100_00011_00100_11111_11111_101001;//beq $v1,$a0,0 
 
 
 end
@@ -254,6 +265,7 @@ module registerFile( clk , rs , rt , rd , writeData , regWrite , Data1 , Data2 ,
     input clk;
     output reg [31:0] Data1,Data2,Answer;
     reg [31:0] registers [31:0];
+    reg [5:0] i;
     
     initial begin
        registers[2]  =32'b11111111111111111000000011100111;
@@ -278,6 +290,16 @@ module registerFile( clk , rs , rt , rd , writeData , regWrite , Data1 , Data2 ,
         registers [rd] <= writeData;
         Answer <= writeData ;
     end
+    
+     initial
+     begin
+	#100 begin
+	 	for(i=0; i<32; i=i+1)
+	 	begin
+	 		$display("RegFile[%d]: %b \n",i,registers[i]);
+	 	end
+ 	end
+ end
 endmodule 
  
  
@@ -315,7 +337,7 @@ initial
 
 always@(posedge clk)
     begin
-   // $display("IF/ID_Instruction %d ,IF/ID_PC %d " ,newInstruction, newPC);
+   // $display("IF/IDInstruction %0d ,IF/IDPC %0d " ,newInstruction, newPC);
     if(Hazard ==1)
         begin
             newInstruction <= currentInstruction;
@@ -363,7 +385,7 @@ initial
 
 always @ (posedge clk)
     begin
-      //  $display(" ID_EX_SignExtend %d , ID_EX_ReadData1 %d , ID_EX_ReadData2 %d , ID_EX_PC %d ,ID_EX_Rs %d , ID_EX_Rt %d , ID_EX_Rd %d , ID_EX_Shamt %d , ID_EX_Op %d , ID_EX_Func %d ,ID_EX_RegDst %d ,ID_EX_Branch %d ,ID_EX_MemRead %d ,ID_EX_MemtoReg %d ,ID_EX_MemWrite %d ,ID_EX_ALUSrc %d ,ID_EX_RegWrite %d" ,nSignExtend, nReadData1, nReadData2, nPC,nRs, nRt, nRd, nShamt, nOp, nFunc,
+  //     $display(" IDEXSignExtend %0d , IDEXReadData1 %0d , IDEXReadData2 %0d , IDEXPC %0d ,IDEXRs %0d , IDEXRt %0d , IDEXRd %0d , IDEXShamt %0d , IDEXOp %0d , IDEXFunc %0d ,IDEXRegDst %0d ,IDEXBranch %0d ,IDEXMemRead %0d ,IDEXMemtoReg %0d ,IDEXMemWrite %0d ,IDEXALUSrc %0d ,IDEXRegWrite %0d" ,nSignExtend, nReadData1, nReadData2, nPC,nRs, nRt, nRd, nShamt, nOp, nFunc,
 //nRegDst,nBranch,nMemRead,nMemtoReg,nMemWrite,nALUSrc,nRegWrite);
         nSignExtend <= cSignExtend;
         nReadData1 <= cReadData1;
@@ -417,7 +439,7 @@ initial
 
 always@(posedge clk)
     begin
-   // $display("EX_MEM_WriteData %d, EX_MEM_PC %d, EX_MEM_WriteRegister %d, EX_MEM_RegWrite %d, EX_MEM_MemtoReg %d, EX_MEM_ALUResult %d, EX_MEM_MemWrite %d, EX_MEM_MemRead %d, EX_MEM_Branch %d, EX_MEM_ZeroFlag %d",nWriteData, nPC, nWriteRegister, nRegWrite, nMemtoReg, nALUResult, nMemWrite, nMemRead, nBranch, nZeroFlag);
+   // $display("EXMEMWriteData %0d, EXMEMPC %0d, EXMEMWriteRegister %0d, EXMEMRegWrite %0d, EXMEMMemtoReg %0d, EXMEMALUResult %0d, EXMEMMemWrite %0d, EXMEMMemRead %0d, EXMEMBranch %0d, EXMEMZeroFlag %0d",nWriteData, nPC, nWriteRegister, nRegWrite, nMemtoReg, nALUResult, nMemWrite, nMemRead, nBranch, nZeroFlag);
         nWriteData<=cWriteData;
         nPC<= cPC;
         nALUResult <= cALUResult;
@@ -454,7 +476,7 @@ initial
 
 always@(posedge clk)
     begin
-   // $display("MEM_WB_MemtoReg %d , MEM_WB_RegWrite %d , MEM_WB_WriteRegister  %d , MEM_WB_ALUResult  %d , MEM_WB_ReadData  %d", nMemtoReg, nRegWrite, nWriteRegister, nALUResult, nReadData);
+   // $display("MEMWBMemtoReg %0d , MEMWBRegWrite %0d , MEMWBWriteRegister %0d , MEMWBALUResult %0d , MEMWBReadData %0d", nMemtoReg, nRegWrite, nWriteRegister, nALUResult, nReadData);
         nALUResult<=cALUResult;
         nReadData<=cReadData;
         nWriteRegister<=cWriteRegister;
@@ -563,8 +585,9 @@ endmodule
 
 ////////////////////////////////////////////////////////////////////////////
  
-module datapath(Answer,clk);
-output   [31:0] Answer;
+module datapath(Answer,clkCounter,clk);
+output  [31:0] Answer;
+output reg [31:0]clkCounter;
 reg [31:0] pc;
 wire [31:0] pc2,Newpc;
 input clk;
@@ -624,6 +647,7 @@ end
 
 initial begin
 #0 pc = 0;
+#0 clkCounter=0;
 end
 
 
@@ -633,6 +657,22 @@ InstructionMemory im (instruction,pc,clk);
 assign Newpc=pc+4;
 always@(posedge clk)
 begin
+clkCounter <=clkCounter+1;
+ $display("IF/IDInstruction %0d ,IF/IDPC %0d \n" ,newInstruction, newPC);
+ 
+  $display("IDEXSignExtend %0d , IDEXReadData1 %0d , IDEXReadData2 %0d , IDEXPC %0d ,IDEXRs %0d , IDEXRt %0d , IDEXRd %0d , IDEXShamt %0d , IDEXOp %0d , IDEXFunc %0d ,IDEXRegDst %0d ,IDEXBranch %0d ,IDEXMemRead %0d ,IDEXMemtoReg %0d ,IDEXMemWrite %0d ,IDEXALUSrc %0d ,IDEXRegWrite %0d \n" ,EXSignExtend, EXReadData1, EXReadData2, EXPC,EXRS, EXRt, EXRd, EXShamt, EXOp, EXFunc,
+EXRegDst,EXBranch,EXMemRead,EXMemtoReg,EXMemWrite,EXALUSrc,EXRegWrite);
+
+  $display("EXMEMWriteData %0d, EXMEMPC %0d, EXMEMWriteRegister %0d, EXMEMRegWrite %0d, EXMEMMemtoReg %0d, EXMEMALUResult %0d, EXMEMMemWrite %0d, EXMEMMemRead %0d, EXMEMBranch %0d, EXMEMZeroFlag %0d \n" ,MEMWriteData, MEMPC, MEMWriteRegister, MEMRegWrite, MEMMemtoReg, MEMALUResult, MEMMemWrite, MEMMemRead, MEMBranch, MEMZeroFlag);
+
+ $display("MEMWBMemtoReg %0d , MEMWBRegWrite %0d , MEMWBWriteRegister %0d , MEMWBALUResult %0d , MEMWBReadData %0d \n", WBMemtoReg, WBRegWrite, WBwriteRegister, WBALUResult, WBReadData);
+  $display ("PCSrc %b \n", MEMBranch&&MEMZeroFlag);
+  
+  $display("ForwardA %0d , ForwardB %0d , PCWrite %0d ,IF/IDWrite %0d , ControlMux %0d \n ", ForwardA , ForwardB ,HazardOutput ,HazardOutput,HazardOutput);
+  
+  
+ $display ("out %b , cycle %0d \n",Answer ,clkCounter);
+
 if(HazardOutput ==0)
     pc<= EXPC;
 else
@@ -716,18 +756,19 @@ endmodule
 module test();
 reg clk;
 wire[31:0] out;
-datapath dp(out,clk);
+wire[31:0] clkCounter;
+datapath dp(out,clkCounter,clk);
 always @ (posedge clk) begin
-$display ("out %b",out );
+//$display ("out %b , cycle %0d ",out ,clkCounter);
 
 end
 initial 
 begin
 clk =0;
-forever begin
-#5 clk=~clk;
-//#30000 $finish;
-end
+//#101 $finish;
+repeat(100)
+#1 clk=~clk;
+
 end
 
 endmodule
